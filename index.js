@@ -8,7 +8,19 @@ const pool = require('./db');
 require('dotenv').config();
 
 const app = express();
-app.use(cors());
+
+// ------------------ FIXED CORS CONFIG ------------------
+app.use(cors({
+  origin: [
+    "http://localhost:4000",
+    "http://127.0.0.1:5500",
+    "https://krishna-shrivastav.github.io"   // GitHub Pages Allowed
+  ],
+  methods: ["GET", "POST", "PUT", "DELETE"],
+  credentials: true
+}));
+// --------------------------------------------------------
+
 app.use(bodyParser.json());
 
 // Generate JWT Token
