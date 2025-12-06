@@ -107,20 +107,59 @@ app.post('/api/login', async (req, res) => {
 });
 
 // ------------------ CUSTOMER: CREATE TASK ------------------
+// ------------------ CUSTOMER: CREATE TASK (SwaDrive) ------------------
 app.post('/api/tasks', authMiddleware, requireRole("customer"), async (req, res) => {
   try {
-    const { title, description, location, reward_amount, urgency } = req.body;
+    // 1. Frontend se jo fields aa rahe hain unko destructure karo
+    const {
+      category,            // task-category
+      component,           // Components
+      mechanicProblem,     // mechanic-problem
+      description,         // task-description
+      location,            // task-location (address / landmark)
+      urgency,             // task-urgency
+      contact,             // task-contact (mobile)
+      reward_amount        // optional
+    } = req.body;
 
+    // 2. Title auto-generate karo (DB ke liye)
+    const title =
+      (category || "Service") +
+      " - " +
+      (mechanicProblem || component || "General Help");
+
+    // 3. Reward amount ko safe number bana do (default 0)
+    const reward = reward_amount ? Number(reward_amount) : 0;
+
+    // 4. Debug ke liye log (Railway logs me dikhega)
+    console.log("Creating task:", {
+      user_id: req.user.user_id,
+      title,
+      description,
+      location,
+      reward,
+      urgency,
+      contact
+    });
+
+    // 5. Insert query (agar tasks table me contact column nahi hai, to ise hata do)
     const [result] = await pool.query(
-      "INSERT INTO tasks (user_id, title, description, location, reward_amount, urgency) VALUES (?, ?, ?, ?, ?, ?)",
-      [req.user.user_id, title, description, location, reward_amount, urgency]
+      `INSERT INTO tasks
+       (user_id, title, description, location, reward_amount, urgency)
+       VALUES (?, ?, ?, ?, ?, ?)`,
+      [req.user.user_id, title, description, location, reward, urgency]
     );
 
-    res.json({ message: "Task created", task_id: result.insertId });
+    return res.json({ message: "Task created", task_id: result.insertId });
   } catch (err) {
-    res.status(500).json({ message: "Task create failed" });
+    console.error("Error while creating task:", err); // important
+    return res.status(500).json({
+      message: "Task create failed",
+      error: err.message
+    });
   }
 });
+
 
 // ------------------ CUSTOMER: VIEW OWN TASKS ------------------
 app.get('/api/my-tasks', authMiddleware, requireRole("customer"), async (req, res) => {
