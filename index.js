@@ -118,16 +118,18 @@ app.post('/api/login', async (req, res) => {
 app.post('/api/tasks', authMiddleware, requireRole("customer"), async (req, res) => {
   try {
     // 1. Frontend se jo fields aa rahe hain unko destructure karo
-    const {
-      category,            // task-category
-      component,           // Components
-      mechanicProblem,     // mechanic-problem
-      description,         // task-description
-      location,            // task-location (address / landmark)
-      urgency,             // task-urgency
-      contact,             // task-contact (mobile)
-      reward_amount        // optional
-    } = req.body;
+const {
+  category,
+  component,
+  mechanicProblem,
+  description,
+  location,
+  urgency,
+  contact,
+  preferred_date,
+  preferred_time,
+  reward_amount
+} = req.body;
 
     // 2. Title auto-generate karo (DB ke liye)
     const title =
@@ -152,8 +154,8 @@ app.post('/api/tasks', authMiddleware, requireRole("customer"), async (req, res)
     // 5. Insert query (agar tasks table me contact column nahi hai, to ise hata do)
     const [result] = await pool.query(
       `INSERT INTO tasks
-       (user_id, title, description, location, reward_amount, urgency)
-       VALUES (?, ?, ?, ?, ?, ?)`,
+       (user_id, title, description, location, preferred_date, preferred_time, contact, reward_amount, urgency)
+VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       [req.user.user_id, title, description, location, reward, urgency]
     );
 
