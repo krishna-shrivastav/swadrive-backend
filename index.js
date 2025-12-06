@@ -1,3 +1,7 @@
+app.get("/", (req, res) => {
+  res.send("✅ SwaDrive Backend is running");
+});
+
 // ------------------ AUTO CREATE TABLES ------------------
 require('./migrate');
 
@@ -228,6 +232,10 @@ app.get('/api/my-assigned-tasks', authMiddleware, requireRole("helper"), async (
 });
 
 // ------------------ START SERVER ------------------
-app.listen(process.env.PORT, () => {
-  console.log("Server running on port " + process.env.PORT);
+const PORT = process.env.PORT || 10000;
+
+app.listen(PORT, () => {
+  console.log("Server running on port " + PORT);
+});
+
 });
