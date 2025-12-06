@@ -23,16 +23,13 @@ async function createTables() {
         title VARCHAR(255),
         description TEXT,
         location VARCHAR(255),
-        reward_amount DECIMAL(10,2),       
-  preferred_date DATE,      
-  preferred_time TIME,      
-  contact VARCHAR(15),      
-        urgency ENUM('emergency',
-  'immediate',
-  'today',
-  'tomorrow',
-  'week',
-  'flexible') DEFAULT 'today',
+        reward_amount DECIMAL(10,2),             
+              urgency ENUM('emergency',
+        'immediate',
+        'today',
+        'tomorrow',
+        'week',
+        'flexible') DEFAULT 'today',
         status ENUM('open','assigned','completed') DEFAULT 'open',
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         FOREIGN KEY (user_id) REFERENCES users(user_id)
@@ -61,5 +58,6 @@ async function createTables() {
 }
 
 createTables();
+
 
 
