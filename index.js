@@ -146,6 +146,9 @@ const {
       title,
       description,
       location,
+        preferred_date,
+    preferred_time,
+    contact,
       reward,
       urgency,
       contact
