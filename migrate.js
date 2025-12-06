@@ -44,12 +44,13 @@ async function createTables() {
     `);
 
     console.log("✅ All tables created successfully!");
-    process.exit(0);
+    
 
   } catch (err) {
     console.error("❌ Migration failed:", err);
-    process.exit(1);
+    
   }
 }
 
 createTables();
+
