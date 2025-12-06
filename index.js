@@ -156,7 +156,15 @@ const {
       `INSERT INTO tasks
        (user_id, title, description, location, preferred_date, preferred_time, contact, reward_amount, urgency)
 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-      [req.user.user_id, title, description, location, reward, urgency]
+      [ req.user.user_id,
+    title,
+    description,
+    location,
+    preferred_date,
+    preferred_time,
+    contact,
+    reward,
+    urgency]
     );
 
     return res.json({ message: "Task created", task_id: result.insertId });
