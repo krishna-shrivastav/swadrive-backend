@@ -1,6 +1,4 @@
-app.get("/", (req, res) => {
-  res.send("✅ SwaDrive Backend is running");
-});
+
 
 // ------------------ AUTO CREATE TABLES ------------------
 require('./migrate');
@@ -62,6 +60,11 @@ function requireRole(role) {
     next();
   };
 }
+
+app.get("/", (req, res) => {
+  res.send("✅ SwaDrive Backend is running");
+});
+
 
 // ------------------ REGISTER ------------------
 app.post('/api/register', async (req, res) => {
