@@ -143,7 +143,6 @@ const {
       title,
       description,
       location,
-    contact,
       reward,
       urgency
     });
