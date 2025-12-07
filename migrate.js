@@ -24,8 +24,6 @@ async function createTables() {
         description TEXT,
         location VARCHAR(255),
         reward_amount DECIMAL(10,2),   
-        preferred_date DATE,
-        preferred_time TIME,
         contact VARCHAR(15),
               urgency ENUM('emergency',
         'immediate',
@@ -61,6 +59,7 @@ async function createTables() {
 }
 
 createTables();
+
 
 
 
