@@ -125,7 +125,6 @@ const {
   description,
   location,
   urgency,
-  contact,
    reward_amount
 } = req.body;
 
@@ -146,20 +145,18 @@ const {
       location,
     contact,
       reward,
-      urgency,
-      contact
+      urgency
     });
 
     // 5. Insert query (agar tasks table me contact column nahi hai, to ise hata do)
     const [result] = await pool.query(
       `INSERT INTO tasks
-       (user_id, title, description, location, contact, reward_amount, urgency)
-VALUES (?, ?, ?, ?, ?, ?, ?)`,
+       (user_id, title, description, location, reward_amount, urgency)
+VALUES (?, ?, ?, ?, ?, ?)`,
       [ req.user.user_id,
     title,
     description,
     location,
-    contact,
     reward,
     urgency]
     );
