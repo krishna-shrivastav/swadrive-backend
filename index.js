@@ -126,9 +126,7 @@ const {
   location,
   urgency,
   contact,
-  preferred_date,
-  preferred_time,
-  reward_amount
+   reward_amount
 } = req.body;
 
     // 2. Title auto-generate karo (DB ke liye)
@@ -146,8 +144,6 @@ const {
       title,
       description,
       location,
-        preferred_date,
-    preferred_time,
     contact,
       reward,
       urgency,
@@ -157,14 +153,12 @@ const {
     // 5. Insert query (agar tasks table me contact column nahi hai, to ise hata do)
     const [result] = await pool.query(
       `INSERT INTO tasks
-       (user_id, title, description, location, preferred_date, preferred_time, contact, reward_amount, urgency)
-VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+       (user_id, title, description, location, contact, reward_amount, urgency)
+VALUES (?, ?, ?, ?, ?, ?, ?)`,
       [ req.user.user_id,
     title,
     description,
     location,
-    preferred_date,
-    preferred_time,
     contact,
     reward,
     urgency]
