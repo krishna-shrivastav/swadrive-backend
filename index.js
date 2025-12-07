@@ -147,6 +147,101 @@ const {
       urgency
     });
 
+// ------------------ CUSTOMER: GET SINGLE TASK (for edit) ------------------
+app.get('/api/tasks/:task_id', authMiddleware, requireRole("customer"), async (req, res) => {
+  try {
+    const task_id = req.params.task_id;
+
+    const [rows] = await pool.query(
+      "SELECT * FROM tasks WHERE task_id=? AND user_id=?",
+      [task_id, req.user.user_id]
+    );
+
+    if (rows.length === 0) {
+      return res.status(404).json({ message: "Task not found" });
+    }
+
+    return res.json(rows[0]);
+  } catch (err) {
+    console.error("Error while loading task:", err);
+    return res.status(500).json({ message: "Failed to load task" });
+  }
+});
+
+
+    // ------------------ CUSTOMER: UPDATE TASK ------------------
+app.put('/api/tasks/:task_id', authMiddleware, requireRole("customer"), async (req, res) => {
+  try {
+    const task_id = req.params.task_id;
+
+    // Pehle verify karo ke ye task isi user ka hai
+    const [rows] = await pool.query(
+      "SELECT * FROM tasks WHERE task_id=? AND user_id=?",
+      [task_id, req.user.user_id]
+    );
+
+    if (rows.length === 0) {
+      return res.status(404).json({ message: "Task not found or not yours" });
+    }
+
+    const {
+      category,
+      component,
+      mechanicProblem,
+      description,
+      location,
+      urgency,
+      reward_amount
+    } = req.body;
+
+    const title =
+      (category || "Service") +
+      " - " +
+      (mechanicProblem || component || "General Help");
+
+    const reward = reward_amount ? Number(reward_amount) : 0;
+
+    await pool.query(
+      `UPDATE tasks 
+       SET title=?, description=?, location=?, urgency=?, reward_amount=?
+       WHERE task_id=?`,
+      [title, description, location, urgency, reward, task_id]
+    );
+
+    return res.json({ message: "Task updated" });
+  } catch (err) {
+    console.error("Error while updating task:", err);
+    return res.status(500).json({ message: "Task update failed" });
+  }
+});
+
+    // ------------------ CUSTOMER: DELETE TASK ------------------
+app.delete('/api/tasks/:task_id', authMiddleware, requireRole("customer"), async (req, res) => {
+  try {
+    const task_id = req.params.task_id;
+
+    // Check ownership
+    const [rows] = await pool.query(
+      "SELECT * FROM tasks WHERE task_id=? AND user_id=?",
+      [task_id, req.user.user_id]
+    );
+
+    if (rows.length === 0) {
+      return res.status(404).json({ message: "Task not found or not yours" });
+    }
+
+    await pool.query("DELETE FROM tasks WHERE task_id=?", [task_id]);
+
+    return res.json({ message: "Task deleted" });
+  } catch (err) {
+    console.error("Error while deleting task:", err);
+    return res.status(500).json({ message: "Task delete failed" });
+  }
+});
+
+
+    
+    
     // 5. Insert query (agar tasks table me contact column nahi hai, to ise hata do)
     const [result] = await pool.query(
       `INSERT INTO tasks
