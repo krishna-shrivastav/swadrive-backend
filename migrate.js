@@ -36,7 +36,23 @@ async function createTables() {
         FOREIGN KEY (user_id) REFERENCES users(user_id)
       )
     `);
+    // ✅ FORCE UPDATE TASKS TABLE (FOR EXISTING DB)
+await pool.query(`
+  ALTER TABLE tasks 
+  MODIFY COLUMN urgency ENUM(
+    'emergency',
+    'immediate',
+    'today',
+    'tomorrow',
+    'week',
+    'flexible'
+  ) DEFAULT 'today'
+`);
 
+    await pool.query(`
+  ALTER TABLE tasks 
+  ADD COLUMN IF NOT EXISTS contact VARCHAR(15)
+`);
     // TASK ASSIGNMENTS TABLE
     await pool.query(`
       CREATE TABLE IF NOT EXISTS task_assignments (
@@ -59,6 +75,7 @@ async function createTables() {
 }
 
 createTables();
+
 
 
 
