@@ -48,10 +48,6 @@ await pool.query(`
   ) DEFAULT 'today'
 `);
 
-    await pool.query(`
-  ALTER TABLE tasks 
-  ADD COLUMN IF NOT EXISTS contact VARCHAR(15)
-`);
     // TASK ASSIGNMENTS TABLE
     await pool.query(`
       CREATE TABLE IF NOT EXISTS task_assignments (
@@ -74,6 +70,7 @@ await pool.query(`
 }
 
 createTables();
+
 
 
 
