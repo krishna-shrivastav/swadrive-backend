@@ -147,6 +147,28 @@ const {
       urgency
     });
 
+     const [result] = await pool.query(
+      `INSERT INTO tasks
+       (user_id, title, description, location, reward_amount, urgency)
+VALUES (?, ?, ?, ?, ?, ?)`,
+      [ req.user.user_id,
+    title,
+    description,
+    location,
+    reward,
+    urgency]
+    );
+
+    return res.json({ message: "Task created", task_id: result.insertId });
+  } catch (err) {
+    console.error("Error while creating task:", err); // important
+    return res.status(500).json({
+      message: "Task create failed",
+      error: err.message
+    });
+  }
+});
+
 // ------------------ CUSTOMER: GET SINGLE TASK (for edit) ------------------
 app.get('/api/tasks/:task_id', authMiddleware, requireRole("customer"), async (req, res) => {
   try {
@@ -243,27 +265,7 @@ app.delete('/api/tasks/:task_id', authMiddleware, requireRole("customer"), async
     
     
     // 5. Insert query (agar tasks table me contact column nahi hai, to ise hata do)
-    const [result] = await pool.query(
-      `INSERT INTO tasks
-       (user_id, title, description, location, reward_amount, urgency)
-VALUES (?, ?, ?, ?, ?, ?)`,
-      [ req.user.user_id,
-    title,
-    description,
-    location,
-    reward,
-    urgency]
-    );
-
-    return res.json({ message: "Task created", task_id: result.insertId });
-  } catch (err) {
-    console.error("Error while creating task:", err); // important
-    return res.status(500).json({
-      message: "Task create failed",
-      error: err.message
-    });
-  }
-});
+   
 
 
 // ------------------ CUSTOMER: VIEW OWN TASKS ------------------
