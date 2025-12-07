@@ -24,7 +24,6 @@ async function createTables() {
         description TEXT,
         location VARCHAR(255),
         reward_amount DECIMAL(10,2),   
-        contact VARCHAR(15),
               urgency ENUM('emergency',
         'immediate',
         'today',
@@ -75,6 +74,7 @@ await pool.query(`
 }
 
 createTables();
+
 
 
 
