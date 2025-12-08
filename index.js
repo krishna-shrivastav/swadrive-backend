@@ -12,7 +12,7 @@ require("dotenv").config();
 
 const app = express();
 
-// ------------------ MIDDLEWARE ------------------
+// ------------------ CORS ------------------
 app.use(cors({
   origin: [
     "http://localhost:4000",
@@ -35,12 +35,11 @@ function createToken(user) {
 
 // ------------------ AUTH ------------------
 function authMiddleware(req, res, next) {
-  const header = req.headers["authorization"];
+  const header = req.headers.authorization;
   if (!header) return res.status(401).json({ message: "No token" });
 
-  const token = header.split(" ")[1];
   try {
-    req.user = jwt.verify(token, process.env.JWT_SECRET);
+    req.user = jwt.verify(header.split(" ")[1], process.env.JWT_SECRET);
     next();
   } catch {
     res.status(401).json({ message: "Invalid token" });
@@ -59,13 +58,13 @@ function requireRole(role) {
 async function createNotification({ user_id, task_id, type, title, message }) {
   await pool.query(
     `INSERT INTO notifications (user_id, task_id, type, title, message)
-     VALUES (?, ?, ?, ?, ?)`,
-    [user_id, task_id || null, type, title, message]
+     VALUES (?,?,?,?,?)`,
+    [user_id, task_id, type, title, message]
   );
 }
 
 // ------------------ BASIC ------------------
-app.get("/", (req, res) => {
+app.get("/", (_, res) => {
   res.send("✅ SwaDrive Backend Running");
 });
 
@@ -73,27 +72,21 @@ app.get("/", (req, res) => {
 // AUTH
 // =======================================================
 app.post("/api/register", async (req, res) => {
-  try {
-    const { full_name, email, phone, password, role } = req.body;
-    const hashed = await bcrypt.hash(password, 10);
+  const { full_name, email, phone, password, role } = req.body;
 
-    const [r] = await pool.query(
-      `INSERT INTO users (full_name,email,phone,password_hash,role)
-       VALUES (?,?,?,?,?)`,
-      [full_name, email, phone, hashed, role || "customer"]
-    );
+  const hashed = await bcrypt.hash(password, 10);
+  const [r] = await pool.query(
+    `INSERT INTO users (full_name,email,phone,password_hash,role)
+     VALUES (?,?,?,?,?)`,
+    [full_name, email, phone, hashed, role || "customer"]
+  );
 
-    res.json({ token: createToken({ user_id: r.insertId, role }) });
-  } catch {
-    res.status(500).json({ message: "Register failed" });
-  }
+  res.json({ token: createToken({ user_id: r.insertId, role }) });
 });
 
 app.post("/api/login", async (req, res) => {
   const { email, password } = req.body;
-  const [[u]] = await pool.query(
-    "SELECT * FROM users WHERE email=?", [email]
-  );
+  const [[u]] = await pool.query(`SELECT * FROM users WHERE email=?`, [email]);
 
   if (!u || !(await bcrypt.compare(password, u.password_hash)))
     return res.status(400).json({ message: "Invalid credentials" });
@@ -117,65 +110,59 @@ app.post("/api/tasks", authMiddleware, requireRole("customer"), async (req, res)
 });
 
 app.get("/api/my-tasks", authMiddleware, requireRole("customer"), async (req, res) => {
-  const [rows] = await pool.query(
-    "SELECT * FROM tasks WHERE user_id=?", [req.user.user_id]
-  );
+  const [rows] = await pool.query(`SELECT * FROM tasks WHERE user_id=?`, [req.user.user_id]);
   res.json(rows);
 });
 
 // =======================================================
 // HELPER
 // =======================================================
-app.get("/api/open-tasks", authMiddleware, requireRole("helper"), async (req, res) => {
-  const [rows] = await pool.query(
-    "SELECT * FROM tasks WHERE status='open'"
-  );
+app.get("/api/open-tasks", authMiddleware, requireRole("helper"), async (_, res) => {
+  const [rows] = await pool.query(`SELECT * FROM tasks WHERE status='open'`);
   res.json(rows);
 });
 
+// ✅ ACCEPT TASK (ONLY ONCE)
 app.post("/api/tasks/:task_id/accept", authMiddleware, requireRole("helper"), async (req, res) => {
   const { task_id } = req.params;
 
   const [[task]] = await pool.query(
-    "SELECT * FROM tasks WHERE task_id=? AND status='open'", [task_id]
+    `SELECT * FROM tasks WHERE task_id=? AND status='open'`,
+    [task_id]
   );
-  if (!task) return res.status(400).json({ message: "Not available" });
+  if (!task) return res.status(400).json({ message: "Task not available" });
 
-  await pool.query(
-    "INSERT INTO task_assignments (task_id, helper_id) VALUES (?,?)",
-    [task_id, req.user.user_id]
-  );
-  await pool.query(
-    "UPDATE tasks SET status='assigned' WHERE task_id=?", [task_id]
-  );
+  await pool.query(`INSERT INTO task_assignments(task_id,helper_id) VALUES (?,?)`,
+    [task_id, req.user.user_id]);
+
+  await pool.query(`UPDATE tasks SET status='assigned' WHERE task_id=?`, [task_id]);
 
   await createNotification({
     user_id: task.user_id,
     task_id,
     type: "accepted",
     title: "Task accepted ✅",
-    message: "A helper accepted your task"
+    message: "Helper accepted your task"
   });
 
   res.json({ message: "Accepted" });
 });
 
+// ✅ COMPLETE TASK (ONLY ONCE)
 app.post("/api/tasks/:task_id/complete", authMiddleware, requireRole("helper"), async (req, res) => {
   const { task_id } = req.params;
 
   const [[task]] = await pool.query(
-    `SELECT t.*, ta.helper_id 
-     FROM tasks t JOIN task_assignments ta 
-     ON t.task_id=ta.task_id
-     WHERE t.task_id=? AND ta.helper_id=?`,
+    `SELECT ta.helper_id, t.user_id
+     FROM task_assignments ta JOIN tasks t
+     ON ta.task_id=t.task_id
+     WHERE ta.task_id=? AND ta.helper_id=?`,
     [task_id, req.user.user_id]
   );
 
   if (!task) return res.status(403).json({ message: "Not your task" });
 
-  await pool.query(
-    "UPDATE tasks SET status='completed' WHERE task_id=?", [task_id]
-  );
+  await pool.query(`UPDATE tasks SET status='completed' WHERE task_id=?`, [task_id]);
 
   await createNotification({
     user_id: task.user_id,
@@ -205,7 +192,7 @@ app.post("/api/tasks/:task_id/review", authMiddleware, requireRole("customer"), 
   if (!task) return res.status(400).json({ message: "Invalid review" });
 
   await pool.query(
-    `INSERT INTO reviews (task_id,helper_id,customer_id,rating,comment)
+    `INSERT INTO reviews(task_id,helper_id,customer_id,rating,comment)
      VALUES (?,?,?,?,?)`,
     [task_id, task.helper_id, req.user.user_id, rating, comment]
   );
