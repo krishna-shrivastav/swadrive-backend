@@ -400,51 +400,7 @@ app.post(
   }
 );
 
-app.post('/api/tasks/:task_id/accept', authMiddleware, requireRole("helper"), async (req, res) => {
-  try {
-    const task_id = req.params.task_id;
 
-    const [[task]] = await pool.query(
-      `SELECT t.*, u.full_name AS customer_name
-       FROM tasks t
-       JOIN users u ON t.user_id = u.user_id
-       WHERE t.task_id=?`,
-      [task_id]
-    );
-
-    if (!task) return res.status(404).json({ message: "Task not found" });
-    if (task.status !== "open")
-      return res.status(400).json({ message: "Task not available" });
-
-    const [[helper]] = await pool.query(
-      "SELECT full_name FROM users WHERE user_id=?",
-      [req.user.user_id]
-    );
-
-    await pool.query(
-      "INSERT INTO task_assignments (task_id, helper_id) VALUES (?, ?)",
-      [task_id, req.user.user_id]
-    );
-
-    await pool.query(
-      "UPDATE tasks SET status='assigned' WHERE task_id=?",
-      [task_id]
-    );
-
-    await createNotification({
-      user_id: task.user_id,
-      task_id,
-      type: "task_accepted",
-      title: "Task accepted ✅",
-      message: `Helper ${helper.full_name} has accepted your task.`
-    });
-
-    res.json({ message: "Task accepted" });
-
-  } catch (err) {
-    res.status(500).json({ message: "Accept failed" });
-  }
-});
 
 app.post('/api/tasks/:task_id/review', authMiddleware, requireRole("customer"), async (req, res) => {
   try {
