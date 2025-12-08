@@ -13,6 +13,7 @@ const pool = require('./db');
 require('dotenv').config();
 
 const app = express();
+const taskId = new URLSearchParams(location.search).get("task_id");
 
 // ------------------ FIXED CORS CONFIG ------------------
 app.use(cors({
@@ -33,6 +34,14 @@ function createToken(user) {
     { user_id: user.user_id, role: user.role },
     process.env.JWT_SECRET,
     { expiresIn: '7d' }
+  );
+}
+// ------------------ NOTIFICATION HELPER ------------------
+async function createNotification({ user_id, task_id, type, title, message }) {
+  await pool.query(
+    `INSERT INTO notifications (user_id, task_id, type, title, message)
+     VALUES (?, ?, ?, ?, ?)`,
+    [user_id, task_id || null, type, title, message]
   );
 }
 
@@ -390,6 +399,121 @@ app.post(
     }
   }
 );
+
+app.post('/api/tasks/:task_id/accept', authMiddleware, requireRole("helper"), async (req, res) => {
+  try {
+    const task_id = req.params.task_id;
+
+    const [[task]] = await pool.query(
+      `SELECT t.*, u.full_name AS customer_name
+       FROM tasks t
+       JOIN users u ON t.user_id = u.user_id
+       WHERE t.task_id=?`,
+      [task_id]
+    );
+
+    if (!task) return res.status(404).json({ message: "Task not found" });
+    if (task.status !== "open")
+      return res.status(400).json({ message: "Task not available" });
+
+    const [[helper]] = await pool.query(
+      "SELECT full_name FROM users WHERE user_id=?",
+      [req.user.user_id]
+    );
+
+    await pool.query(
+      "INSERT INTO task_assignments (task_id, helper_id) VALUES (?, ?)",
+      [task_id, req.user.user_id]
+    );
+
+    await pool.query(
+      "UPDATE tasks SET status='assigned' WHERE task_id=?",
+      [task_id]
+    );
+
+    await createNotification({
+      user_id: task.user_id,
+      task_id,
+      type: "task_accepted",
+      title: "Task accepted ✅",
+      message: `Helper ${helper.full_name} has accepted your task.`
+    });
+
+    res.json({ message: "Task accepted" });
+
+  } catch (err) {
+    res.status(500).json({ message: "Accept failed" });
+  }
+});
+
+app.post('/api/tasks/:task_id/complete', authMiddleware, requireRole("helper"), async (req, res) => {
+  try {
+    const task_id = req.params.task_id;
+
+    const [[task]] = await pool.query(
+      `SELECT t.*, u.full_name AS customer_name
+       FROM tasks t
+       JOIN task_assignments ta ON t.task_id = ta.task_id
+       JOIN users u ON t.user_id = u.user_id
+       WHERE t.task_id=? AND ta.helper_id=?`,
+      [task_id, req.user.user_id]
+    );
+
+    if (!task)
+      return res.status(403).json({ message: "Not your task" });
+
+    const [[helper]] = await pool.query(
+      "SELECT full_name FROM users WHERE user_id=?",
+      [req.user.user_id]
+    );
+
+    await pool.query(
+      "UPDATE tasks SET status='completed' WHERE task_id=?",
+      [task_id]
+    );
+
+    await createNotification({
+      user_id: task.user_id,
+      task_id,
+      type: "task_completed",
+      title: "Task completed 🎉",
+      message: `Helper ${helper.full_name} has completed your task. Please leave a review.`
+    });
+
+    res.json({ message: "Task marked completed" });
+
+  } catch (err) {
+    res.status(500).json({ message: "Complete failed" });
+  }
+});
+app.post('/api/tasks/:task_id/review', authMiddleware, requireRole("customer"), async (req, res) => {
+  try {
+    const { rating, comment } = req.body;
+    const task_id = req.params.task_id;
+
+    const [[task]] = await pool.query(
+      `SELECT t.*, ta.helper_id
+       FROM tasks t
+       JOIN task_assignments ta ON t.task_id = ta.task_id
+       WHERE t.task_id=? AND t.user_id=? AND t.status='completed'`,
+      [task_id, req.user.user_id]
+    );
+
+    if (!task)
+      return res.status(400).json({ message: "Task not eligible for review" });
+
+    await pool.query(
+      `INSERT INTO reviews (task_id, helper_id, customer_id, rating, comment)
+       VALUES (?, ?, ?, ?, ?)`,
+      [task_id, task.helper_id, req.user.user_id, rating, comment]
+    );
+
+    res.json({ message: "Review submitted successfully" });
+
+  } catch (err) {
+    res.status(500).json({ message: "Review failed" });
+  }
+});
 
 
 
