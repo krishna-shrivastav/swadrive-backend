@@ -79,6 +79,21 @@ await pool.query(`
         ON DELETE SET NULL
     )
   `);
+await pool.query(`
+      CREATE TABLE reviews (
+  review_id INT AUTO_INCREMENT PRIMARY KEY,
+  task_id INT NOT NULL,
+  helper_id INT NOT NULL,
+  customer_id INT NOT NULL,
+  rating INT CHECK (rating >= 1 AND rating <= 5),
+  comment TEXT,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (task_id) REFERENCES tasks(task_id),
+  FOREIGN KEY (helper_id) REFERENCES users(user_id),
+  FOREIGN KEY (customer_id) REFERENCES users(user_id)
+  )
+');
+
 
 
     console.log("✅ All tables created successfully!");
@@ -91,6 +106,7 @@ await pool.query(`
 }
 
 createTables();
+
 
 
 
