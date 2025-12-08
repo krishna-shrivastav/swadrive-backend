@@ -291,6 +291,26 @@ app.get('/api/open-tasks', authMiddleware, requireRole("helper"), async (req, re
   }
 });
 
+// ------------------ HELPER: VIEW SINGLE OPEN TASK ------------------
+app.get("/api/helper/tasks/:task_id", authMiddleware, requireRole("helper"), async (req, res) => {
+  try {
+    const [rows] = await pool.query(
+      "SELECT * FROM tasks WHERE task_id=?",
+      [req.params.task_id]
+    );
+
+    if (!rows.length) {
+      return res.status(404).json({ message: "Task not found" });
+    }
+
+    res.json(rows[0]);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: "Failed to load task" });
+  }
+});
+
+
 // ------------------ HELPER: ACCEPT TASK ------------------
 app.post('/api/tasks/:task_id/accept', authMiddleware, requireRole("helper"), async (req, res) => {
   try {
