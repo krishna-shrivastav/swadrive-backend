@@ -354,6 +354,45 @@ app.get('/api/my-assigned-tasks', authMiddleware, requireRole("helper"), async (
   }
 });
 
+// ------------------ HELPER: COMPLETE TASK ------------------
+app.post(
+  "/api/tasks/:task_id/complete",
+  authMiddleware,
+  requireRole("helper"),
+  async (req, res) => {
+    try {
+      const task_id = req.params.task_id;
+
+      // Verify task is assigned to this helper
+      const [rows] = await pool.query(
+        `SELECT * FROM task_assignments 
+         WHERE task_id=? AND helper_id=?`,
+        [task_id, req.user.user_id]
+      );
+
+      if (rows.length === 0) {
+        return res.status(403).json({
+          message: "You are not assigned to this task"
+        });
+      }
+
+      // Update task status
+      await pool.query(
+        "UPDATE tasks SET status='completed' WHERE task_id=?",
+        [task_id]
+      );
+
+      res.json({ message: "✅ Task marked as completed" });
+
+    } catch (err) {
+      console.error("Complete task error:", err);
+      res.status(500).json({ message: "Failed to complete task" });
+    }
+  }
+);
+
+
+
 // ------------------ START SERVER ------------------
 const PORT = process.env.PORT || 10000;
 
