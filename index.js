@@ -281,7 +281,7 @@ app.delete('/api/tasks/:task_id', authMiddleware, requireRole("customer"), async
 app.get('/api/my-tasks', authMiddleware, requireRole("customer"), async (req, res) => {
   try {
     const [rows] = await pool.query(
-      "SELECT * FROM tasks WHERE user_id=?", 
+      "SELECT * FROM tasks WHERE user_id=? AND status!='completed'",
       [req.user.user_id]
     );
     res.json(rows);
@@ -289,6 +289,22 @@ app.get('/api/my-tasks', authMiddleware, requireRole("customer"), async (req, re
     res.status(500).json({ message: "Failed to load tasks" });
   }
 });
+
+// ------------------ CUSTOMER: VIEW COMPLETED TASKS ------------------
+app.get('/api/my-completed-tasks', authMiddleware, requireRole("customer"), async (req, res) => {
+  try {
+    const [rows] = await pool.query(
+      "SELECT * FROM tasks WHERE user_id=? AND status='completed'",
+      [req.user.user_id]
+    );
+    res.json(rows);
+  } catch (err) {
+    res.status(500).json({ message: "Failed to load completed tasks" });
+  }
+});
+
+
+
 
 // ------------------ HELPER: VIEW OPEN TASKS ------------------
 app.get('/api/open-tasks', authMiddleware, requireRole("helper"), async (req, res) => {
