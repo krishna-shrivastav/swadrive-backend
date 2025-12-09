@@ -477,6 +477,197 @@ app.put(
   }
 );
 
+// =======================================================
+// CHAT ROUTES (CUSTOMER + HELPER)
+// =======================================================
+
+// 👉 1) Start / Get chat for a task
+app.post("/api/chats/start", authMiddleware, async (req, res) => {
+  try {
+    const { task_id } = req.body;
+
+    if (!task_id) {
+      return res.status(400).json({ message: "task_id required" });
+    }
+
+    let customer_id, helper_id;
+
+    if (req.user.role === "helper") {
+      // helper side: verify this helper is assigned for this task
+      const [[row]] = await pool.query(
+        `SELECT t.user_id AS customer_id, ta.helper_id
+         FROM tasks t
+         JOIN task_assignments ta ON t.task_id = ta.task_id
+         WHERE t.task_id = ? AND ta.helper_id = ?`,
+        [task_id, req.user.user_id]
+      );
+
+      if (!row) {
+        return res.status(403).json({
+          message: "You are not assigned to this task",
+        });
+      }
+
+      customer_id = row.customer_id;
+      helper_id = row.helper_id;
+    } else if (req.user.role === "customer") {
+      // customer side: verify this is his/her task and has helper
+      const [[row]] = await pool.query(
+        `SELECT t.user_id AS customer_id, ta.helper_id
+         FROM tasks t
+         JOIN task_assignments ta ON t.task_id = ta.task_id
+         WHERE t.task_id = ? AND t.user_id = ?`,
+        [task_id, req.user.user_id]
+      );
+
+      if (!row) {
+        return res.status(403).json({
+          message: "No helper assigned or not your task",
+        });
+      }
+
+      customer_id = row.customer_id;
+      helper_id = row.helper_id;
+    } else {
+      return res.status(403).json({ message: "Invalid role for chat" });
+    }
+
+    // Check if chat already exists
+    const [existing] = await pool.query(
+      `SELECT * FROM chats 
+       WHERE task_id=? AND customer_id=? AND helper_id=?`,
+      [task_id, customer_id, helper_id]
+    );
+
+    if (existing.length > 0) {
+      return res.json(existing[0]); // return existing chat
+    }
+
+    // Create new chat
+    const [result] = await pool.query(
+      `INSERT INTO chats (task_id, customer_id, helper_id)
+       VALUES (?, ?, ?)`,
+      [task_id, customer_id, helper_id]
+    );
+
+    const chat = {
+      chat_id: result.insertId,
+      task_id,
+      customer_id,
+      helper_id,
+    };
+
+    return res.json(chat);
+  } catch (err) {
+    console.error("Chat start error:", err);
+    return res.status(500).json({ message: "Failed to start chat" });
+  }
+});
+
+// 👉 2) Get all chats for logged in user
+app.get("/api/chats", authMiddleware, async (req, res) => {
+  try {
+    const userId = req.user.user_id;
+
+    const [rows] = await pool.query(
+      `SELECT c.*, t.title
+       FROM chats c
+       JOIN tasks t ON c.task_id = t.task_id
+       WHERE c.customer_id = ? OR c.helper_id = ?
+       ORDER BY c.created_at DESC`,
+      [userId, userId]
+    );
+
+    res.json(rows);
+  } catch (err) {
+    console.error("Get chats error:", err);
+    res.status(500).json({ message: "Failed to load chats" });
+  }
+});
+
+// 👉 3) Get messages of one chat
+app.get("/api/chats/:chat_id/messages", authMiddleware, async (req, res) => {
+  try {
+    const { chat_id } = req.params;
+    const userId = req.user.user_id;
+
+    // Check membership
+    const [[chat]] = await pool.query(
+      `SELECT * FROM chats 
+       WHERE chat_id = ? AND (customer_id = ? OR helper_id = ?)`,
+      [chat_id, userId, userId]
+    );
+
+    if (!chat) {
+      return res.status(403).json({ message: "Access denied to this chat" });
+    }
+
+    const [messages] = await pool.query(
+      `SELECT m.*, u.full_name 
+       FROM chat_messages m
+       JOIN users u ON m.sender_id = u.user_id
+       WHERE m.chat_id = ?
+       ORDER BY m.created_at ASC`,
+      [chat_id]
+    );
+
+    res.json(messages);
+  } catch (err) {
+    console.error("Get chat messages error:", err);
+    res.status(500).json({ message: "Failed to load messages" });
+  }
+});
+
+// 👉 4) Send message in a chat
+app.post("/api/chats/:chat_id/messages", authMiddleware, async (req, res) => {
+  try {
+    const { chat_id } = req.params;
+    const { message } = req.body;
+    const userId = req.user.user_id;
+
+    if (!message || !message.trim()) {
+      return res.status(400).json({ message: "Message required" });
+    }
+
+    // Check membership
+    const [[chat]] = await pool.query(
+      `SELECT * FROM chats 
+       WHERE chat_id = ? AND (customer_id = ? OR helper_id = ?)`,
+      [chat_id, userId, userId]
+    );
+
+    if (!chat) {
+      return res.status(403).json({ message: "Access denied to this chat" });
+    }
+
+    // Insert message
+    const [result] = await pool.query(
+      `INSERT INTO chat_messages (chat_id, sender_id, message_text)
+       VALUES (?, ?, ?)`,
+      [chat_id, userId, message.trim()]
+    );
+
+    // Optional: notification for other user
+    const otherUserId =
+      chat.customer_id === userId ? chat.helper_id : chat.customer_id;
+
+    await createNotification({
+      user_id: otherUserId,
+      task_id: chat.task_id,
+      type: "chat_message",
+      title: "New chat message 💬",
+      message: message.slice(0, 100),
+    });
+
+    res.json({
+      message: "Message sent",
+      message_id: result.insertId,
+    });
+  } catch (err) {
+    console.error("Send message error:", err);
+    res.status(500).json({ message: "Failed to send message" });
+  }
+});
 
 
 
