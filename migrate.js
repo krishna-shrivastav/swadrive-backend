@@ -99,6 +99,8 @@ async function createTables() {
    CREATE TABLE IF NOT EXISTS chats (
   chat_id INT AUTO_INCREMENT PRIMARY KEY,
   task_id INT NOT NULL,
+  chats.customer_id INT NOT NULL,
+  chats.helper_id INT NOT NULL,
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   FOREIGN KEY (task_id) REFERENCES tasks(task_id) ON DELETE CASCADE
 )
@@ -127,5 +129,6 @@ async function createTables() {
 }
 
 createTables();
+
 
 
