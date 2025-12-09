@@ -14,7 +14,6 @@ require('dotenv').config();
 
 const app = express();
 
-
 // ------------------ FIXED CORS CONFIG ------------------
 app.use(cors({
   origin: [
