@@ -641,11 +641,12 @@ app.post("/api/chats/:chat_id/messages", authMiddleware, async (req, res) => {
     }
 
     // Insert message
-    const [result] = await pool.query(
-      `INSERT INTO chat_messages (chat_id, sender_id, message_text)
-       VALUES (?, ?, ?)`,
-      [chat_id, userId, message.trim()]
-    );
+    const [result] =await pool.query(
+  `INSERT INTO chat_messages (chat_id, sender_id, sender_role, message)
+   VALUES (?, ?, ?, ?)`,
+  [chat_id, userId, req.user.role, message.trim()]
+);
+
 
     // Optional: notification for other user
     const otherUserId =
