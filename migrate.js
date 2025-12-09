@@ -95,6 +95,30 @@ async function createTables() {
       )
     `);
 
+    await pool.query(`
+    CREATE TABLE chats (
+  chat_id INT AUTO_INCREMENT PRIMARY KEY,
+  task_id INT NOT NULL,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (task_id) REFERENCES tasks(task_id) ON DELETE CASCADE
+)
+`);
+
+    await pool.query(`
+    CREATE TABLE chat_messages (
+  message_id INT AUTO_INCREMENT PRIMARY KEY,
+  chat_id INT NOT NULL,
+  sender_id INT NOT NULL,
+  sender_role ENUM('customer','helper') NOT NULL,
+  message TEXT,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (chat_id) REFERENCES chats(chat_id),
+  FOREIGN KEY (sender_id) REFERENCES users(user_id)
+)
+`);
+
+
+
     console.log("✅ All tables created successfully!");
 
   } catch (err) {
@@ -103,3 +127,4 @@ async function createTables() {
 }
 
 createTables();
+
