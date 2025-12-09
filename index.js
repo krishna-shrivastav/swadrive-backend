@@ -272,7 +272,7 @@ app.delete('/api/tasks/:task_id', authMiddleware, requireRole("customer"), async
 
     
     
-    // 5. Insert query (agar tasks table me contact column nahi hai, to ise hata do)
+   
    
 
 
@@ -289,6 +289,19 @@ app.get('/api/my-tasks', authMiddleware, requireRole("customer"), async (req, re
   }
 });
 
+// ------------------ CUSTOMER: VIEW COMPLETED TASKS ------------------
+app.get('/api/my-completed-tasks', authMiddleware, requireRole("customer"), async (req, res) => {
+  try {
+    const [rows] = await pool.query(
+      "SELECT * FROM tasks WHERE user_id=? AND status = 'completed' ORDER BY created_at DESC",
+      [req.user.user_id]
+    );
+    res.json(rows);
+  } catch (err) {
+    console.error("My-completed-tasks error:", err);
+    res.status(500).json({ message: "Failed to load completed tasks" });
+  }
+});
 
 
 
