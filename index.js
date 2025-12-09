@@ -434,6 +434,39 @@ app.post('/api/tasks/:task_id/review', authMiddleware, requireRole("customer"), 
   }
 });
 
+// ------------------ CUSTOMER: GET NOTIFICATIONS ------------------
+app.get(
+  "/api/notifications",
+  authMiddleware,
+  requireRole("customer"),
+  async (req, res) => {
+    const [rows] = await pool.query(
+      `SELECT * FROM notifications 
+       WHERE user_id=? 
+       ORDER BY created_at DESC`,
+      [req.user.user_id]
+    );
+
+    res.json(rows);
+  }
+);
+
+// ------------------ MARK NOTIFICATION READ ------------------
+app.put(
+  "/api/notifications/:id/read",
+  authMiddleware,
+  requireRole("customer"),
+  async (req, res) => {
+    await pool.query(
+      "UPDATE notifications SET is_read=1 WHERE notification_id=?",
+      [req.params.id]
+    );
+    res.json({ message: "Marked read" });
+  }
+);
+
+
+
 
 
 // ------------------ START SERVER ------------------
