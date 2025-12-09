@@ -96,7 +96,7 @@ async function createTables() {
     `);
 
     await pool.query(`
-    CREATE TABLE chats (
+   CREATE TABLE IF NOT EXISTS chats (
   chat_id INT AUTO_INCREMENT PRIMARY KEY,
   task_id INT NOT NULL,
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
@@ -105,7 +105,7 @@ async function createTables() {
 `);
 
     await pool.query(`
-    CREATE TABLE chat_messages (
+   CREATE TABLE IF NOT EXISTS chat_messages  (
   message_id INT AUTO_INCREMENT PRIMARY KEY,
   chat_id INT NOT NULL,
   sender_id INT NOT NULL,
@@ -127,4 +127,5 @@ async function createTables() {
 }
 
 createTables();
+
 
