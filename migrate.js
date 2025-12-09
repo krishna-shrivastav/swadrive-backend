@@ -104,6 +104,47 @@ async function createTables() {
 )
 `);
 
+    // ✅ ADD customer_id & helper_id TO chats TABLE (SAFE)
+const [chatColumns] = await pool.query(`
+  SELECT COLUMN_NAME 
+  FROM INFORMATION_SCHEMA.COLUMNS 
+  WHERE TABLE_SCHEMA = DATABASE()
+  AND TABLE_NAME = 'chats'
+`);
+
+const hasCustomerId = chatColumns.some(c => c.COLUMN_NAME === 'customer_id');
+const hasHelperId = chatColumns.some(c => c.COLUMN_NAME === 'helper_id');
+
+if (!hasCustomerId) {
+  await pool.query(`
+    ALTER TABLE chats 
+    ADD COLUMN customer_id INT NOT NULL
+  `);
+}
+
+if (!hasHelperId) {
+  await pool.query(`
+    ALTER TABLE chats 
+    ADD COLUMN helper_id INT NOT NULL
+  `);
+}
+
+    // ✅ ADD FOREIGN KEYS SAFELY
+await pool.query(`
+  ALTER TABLE chats
+  ADD CONSTRAINT fk_chats_customer
+  FOREIGN KEY (customer_id) REFERENCES users(user_id)
+  ON DELETE CASCADE
+`).catch(() => {});
+
+await pool.query(`
+  ALTER TABLE chats
+  ADD CONSTRAINT fk_chats_helper
+  FOREIGN KEY (helper_id) REFERENCES users(user_id)
+  ON DELETE CASCADE
+`).catch(() => {});
+
+
     await pool.query(`
    CREATE TABLE IF NOT EXISTS chat_messages  (
   message_id INT AUTO_INCREMENT PRIMARY KEY,
@@ -127,6 +168,7 @@ async function createTables() {
 }
 
 createTables();
+
 
 
 
