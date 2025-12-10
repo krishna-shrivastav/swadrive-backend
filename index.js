@@ -477,6 +477,23 @@ app.put(
   }
 );
 
+// ------------------ UNREAD NOTIFICATIONS COUNT (BELL 🔔) ------------------
+app.get(
+  "/api/notifications/unread-count",
+  authMiddleware,
+  requireRole("customer"),
+  async (req, res) => {
+    const [[row]] = await pool.query(
+      "SELECT COUNT(*) AS count FROM notifications WHERE user_id=? AND is_read=0",
+      [req.user.user_id]
+    );
+
+    res.json({ count: row.count });
+  }
+);
+
+
+
 // =======================================================
 // CHAT ROUTES (CUSTOMER + HELPER)
 // =======================================================
