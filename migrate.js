@@ -158,6 +158,19 @@ await pool.query(`
 )
 `);
 
+    await pool.query(`
+  CREATE TABLE IF NOT EXISTS messages (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    sender_id INT,
+    receiver_id INT,
+    message TEXT,
+    delivered TINYINT DEFAULT 0,
+    seen TINYINT DEFAULT 0,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+  )
+`);
+
+
 
 
     console.log("✅ All tables created successfully!");
@@ -168,6 +181,7 @@ await pool.query(`
 }
 
 createTables();
+
 
 
 
