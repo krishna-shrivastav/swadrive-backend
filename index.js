@@ -688,6 +688,34 @@ app.post("/api/chats/:chat_id/messages", authMiddleware, async (req, res) => {
 });
 
 
+app.post("/api/send-message", authMiddleware, async (req, res) => {
+  const { receiver_id, message } = req.body;
+
+  const [result] = await pool.query(
+    "INSERT INTO messages (sender_id, receiver_id, message, delivered) VALUES (?, ?, ?, 1)",
+    [req.user.user_id, receiver_id, message]
+  );
+
+  res.json({ message: "Message sent", message_id: result.insertId });
+});
+
+
+app.post("/api/messages/mark-seen", authMiddleware, async (req, res) => {
+  await pool.query(
+    "UPDATE messages SET seen=1 WHERE receiver_id=? AND seen=0",
+    [req.user.user_id]
+  );
+  res.json({ message: "Messages marked as seen" });
+});
+
+app.post("/api/messages/mark-delivered", authMiddleware, async (req, res) => {
+  await pool.query(
+    "UPDATE messages SET delivered=1 WHERE receiver_id=? AND delivered=0",
+    [req.user.user_id]
+  );
+  res.json({ message: "Delivered updated" });
+});
+
 
 
 // ------------------ START SERVER ------------------
