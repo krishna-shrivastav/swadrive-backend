@@ -700,21 +700,6 @@ app.post("/api/send-message", authMiddleware, async (req, res) => {
 });
 
 
-app.post("/api/messages/mark-seen", authMiddleware, async (req, res) => {
-  await pool.query(
-    "UPDATE messages SET seen=1 WHERE receiver_id=? AND seen=0",
-    [req.user.user_id]
-  );
-  res.json({ message: "Messages marked as seen" });
-});
-
-app.post("/api/messages/mark-delivered", authMiddleware, async (req, res) => {
-  await pool.query(
-    "UPDATE messages SET delivered=1 WHERE receiver_id=? AND delivered=0",
-    [req.user.user_id]
-  );
-  res.json({ message: "Delivered updated" });
-});
 
 
 
