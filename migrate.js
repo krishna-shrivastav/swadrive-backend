@@ -170,6 +170,20 @@ await pool.query(`
   )
 `);
 
+    await pool.query(`
+  CREATE TABLE IF NOT EXISTS chat_messages (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    chat_id INT,
+    sender_id INT,
+    sender_role ENUM('customer','helper'),
+    message TEXT,
+    delivered TINYINT DEFAULT 0,
+    seen TINYINT DEFAULT 0,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (chat_id) REFERENCES chats(chat_id)
+  )
+`);
+
 
 
 
@@ -181,6 +195,7 @@ await pool.query(`
 }
 
 createTables();
+
 
 
 
