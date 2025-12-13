@@ -718,6 +718,28 @@ app.post("/api/messages/mark-delivered", authMiddleware, async (req, res) => {
 
 
 
+app.post("/api/chat/messages/mark-seen", authMiddleware, async (req, res) => {
+  await pool.query(
+    "UPDATE chat_messages SET seen=1 WHERE sender_id!=? AND seen=0",
+    [req.user.user_id]
+  );
+  res.json({ message: "Seen updated" });
+});
+
+
+
+app.post("/api/chat/messages/mark-delivered", authMiddleware, async (req, res) => {
+  await pool.query(
+    "UPDATE chat_messages SET delivered=1 WHERE sender_id!=? AND delivered=0",
+    [req.user.user_id]
+  );
+  res.json({ message: "Delivered updated" });
+});
+
+
+
+
+
 // ------------------ START SERVER ------------------
 const PORT = process.env.PORT || 10000;
 
