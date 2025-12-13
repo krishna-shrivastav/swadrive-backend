@@ -159,7 +159,7 @@ await pool.query(`
 `);
 
     await pool.query(`
-  CREATE TABLE IF NOT EXISTS messages (
+  CREATE TABLE IF NOT EXISTS message (
     id INT AUTO_INCREMENT PRIMARY KEY,
     sender_id INT,
     receiver_id INT,
@@ -195,6 +195,7 @@ await pool.query(`
 }
 
 createTables();
+
 
 
 
