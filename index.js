@@ -1,16 +1,18 @@
 
-
-const app = express();
-require('./migrate');
+// ------------------ ENV LOAD (SABSE UPAR) ------------------
+require("dotenv").config();
 
 // ------------------ IMPORTS ------------------
-const express = require('express');
-const bodyParser = require('body-parser');
-const bcrypt = require('bcrypt');
-const jwt = require('jsonwebtoken');
-const cors = require('cors');
-const pool = require('./db');
-require('dotenv').config();
+const express = require("express");
+const bodyParser = require("body-parser");
+const bcrypt = require("bcrypt");
+const jwt = require("jsonwebtoken");
+const cors = require("cors");
+const pool = require("./db");
+
+// ------------------ APP INIT ------------------
+const app = express();
+
 
 
 
