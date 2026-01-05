@@ -1,6 +1,6 @@
 
 
-// ------------------ AUTO CREATE TABLES ------------------
+const app = express();
 require('./migrate');
 
 // ------------------ IMPORTS ------------------
@@ -12,7 +12,7 @@ const cors = require('cors');
 const pool = require('./db');
 require('dotenv').config();
 
-const app = express();
+
 
 // ------------------ FIXED CORS CONFIG ------------------
 app.use(cors({
