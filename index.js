@@ -11,7 +11,6 @@ const pool = require("./db");
 
 // ================== APP INIT ==================
 const app = express();
-
 // ================== MIDDLEWARE ==================
 app.use(cors({
   origin: [
